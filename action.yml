@@ -1,0 +1,159 @@
+# The MIT License (MIT)
+# =====================
+
+# Copyright © 2025 Ronan LE MEILLAT fro SCTG Development
+
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the “Software”), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
+name: 'Clean Runner for Docker Builds'
+description: 'Free up disk space on GitHub runners by removing unnecessary packages and directories for Docker multi-architecture builds'
+inputs:
+  remove-development-tools:
+    description: 'Remove development tools like ghc, dotnet, llvm, etc.'
+    required: false
+    default: 'true'
+  remove-browsers:
+    description: 'Remove browser packages like firefox, chrome, etc.'
+    required: false
+    default: 'true'
+  remove-databases:
+    description: 'Remove database packages like mysql, etc.'
+    required: false
+    default: 'true'
+  remove-cloud-tools:
+    description: 'Remove cloud tools like azure-cli, google-cloud-sdk, etc.'
+    required: false
+    default: 'true'
+  show-top-packages:
+    description: 'Show the largest packages before and after cleanup'
+    required: false
+    default: 'true'
+
+outputs:
+  space-before:
+    description: 'Available disk space before cleaning (in GB)'
+    value: ${{ steps.space-report.outputs.before }}
+  space-after:
+    description: 'Available disk space after cleaning (in GB)'
+    value: ${{ steps.space-report.outputs.after }}
+  space-saved:
+    description: 'Disk space saved by cleaning (in GB)'
+    value: ${{ steps.space-report.outputs.saved }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check disk space before cleaning
+      id: space-report
+      shell: bash
+      run: |
+        SPACE_BEFORE=$(df -h / | awk 'NR==2 {print $4}' | sed 's/G//')
+        echo "before=$SPACE_BEFORE" >> $GITHUB_OUTPUT
+        echo "📊 Available disk space before cleaning: $SPACE_BEFORE GB"
+
+    - name: Show top 100 largest packages (before)
+      if: inputs.show-top-packages == 'true'
+      shell: bash
+      run: |
+        echo "📦 Top 100 largest packages before cleanup:"
+        dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
+
+    - name: Free disk space by removing unnecessary packages
+      shell: bash
+      run: |
+        echo "🧹 Starting cleanup process..."
+        echo "✅ Current disk space usage:"
+        df -h
+
+        # Remove development tools
+        if [ "${{ inputs.remove-development-tools }}" == "true" ]; then
+          echo "🗑️ Removing development tools and compilers..."
+          sudo apt-get remove -y '^ghc-.*' || true
+          sudo apt-get remove -y '^dotnet-.*' || true
+          sudo apt-get remove -y '^llvm-.*' || true
+          sudo apt-get remove -y '^gfortran-.*' || true
+          sudo apt-get remove -y '^gruby.*' || true
+          sudo apt-get remove -y '^clang.*' || true
+          sudo apt-get remove -y '^gcc-1.*' || true
+          sudo apt-get remove -y 'mono-devel' || true
+        fi
+
+        # Remove browser packages
+        if [ "${{ inputs.remove-browsers }}" == "true" ]; then
+          echo "🗑️ Removing browser packages..."
+          sudo apt-get remove -y 'google-chrome-stable' || true
+          sudo apt-get remove -y 'firefox' || true
+          sudo apt-get remove -y 'microsoft-edge-stable' || true
+        fi
+
+        # Remove database packages
+        if [ "${{ inputs.remove-databases }}" == "true" ]; then
+          echo "🗑️ Removing database packages..."
+          sudo apt-get remove -y 'mysql.*' || true
+          sudo apt-get remove -y 'postgresql.*' || true
+          sudo apt-get remove -y 'mongodb.*' || true
+        fi
+
+        # Remove cloud tools
+        if [ "${{ inputs.remove-cloud-tools }}" == "true" ]; then
+          echo "🗑️ Removing cloud tools..."
+          sudo apt-get remove -y 'azure-cli' || true
+          sudo apt-get remove -y 'google-cloud-sdk' || true
+          sudo apt-get remove -y 'aws-cli' || true
+        fi
+
+        # Remove other large packages
+        echo "🗑️ Removing other large packages..."
+        sudo apt-get remove -y 'php.*' || true
+        sudo apt-get remove -y '^openjdk.*' || true
+        sudo apt-get remove -y '.*temurin*' || true
+        sudo apt-get remove -y 'hhvm' || true
+        sudo apt-get remove -y 'powershell' || true
+        sudo apt-get remove -y 'python3' || true
+        sudo apt-get remove -y 'snapd' || true
+        sudo apt-get remove -y 'libgl1-mesa-dri' || true
+
+        # Clean up package manager
+        echo "🧹 Cleaning up package manager..."
+        sudo apt-get autoremove -y || true
+        sudo apt-get clean || true
+
+        # Remove large directories
+        echo "🗑️ Removing large directories..."
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        sudo rm -rf /usr/local/lib/android
+
+        echo "✅ Disk space after cleanup:"
+        sync
+        df -h
+
+    - name: Calculate space saved
+      id: calculate-space
+      shell: bash
+      run: |
+        SPACE_AFTER=$(df -h / | awk 'NR==2 {print $4}' | sed 's/G//')
+        SPACE_SAVED=$(echo "$SPACE_AFTER - ${{ steps.space-report.outputs.before }}" | bc)
+        echo "after=$SPACE_AFTER" >> $GITHUB_OUTPUT
+        echo "saved=$SPACE_SAVED" >> $GITHUB_OUTPUT
+        echo "📊 Available disk space after cleaning: $SPACE_AFTER GB"
+        echo "💾 Total space saved: $SPACE_SAVED GB"
