@@ -26,6 +26,9 @@
 
 name: 'Clean Runner for Docker Builds'
 description: 'Free up disk space on GitHub runners by removing unnecessary packages and directories for Docker multi-architecture builds'
+branding:
+  icon: 'trash'
+  color: 'blue'
 inputs:
   remove-development-tools:
     description: 'Remove development tools like ghc, dotnet, llvm, etc.'
