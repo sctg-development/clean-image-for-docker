@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Clean runner for Docker builds
-        uses: sctg-development/clean-image-for-docker:v1
+        uses: sctg-development/clean-image-for-docker@v1
         # Optional parameters
         with:
           remove-development-tools: 'true'
