@@ -24,46 +24,46 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-name: 'Clean Runner for Docker Builds'
-description: 'Free up disk space on GitHub runners by removing unnecessary packages and directories for Docker multi-architecture builds'
+name: "Clean Runner for Docker Builds"
+description: "Free up disk space on GitHub runners by removing unnecessary packages and directories for Docker multi-architecture builds"
 branding:
-  icon: 'trash'
-  color: 'blue'
+  icon: "trash"
+  color: "blue"
 inputs:
   remove-development-tools:
-    description: 'Remove development tools like ghc, dotnet, llvm, etc.'
+    description: "Remove development tools like ghc, dotnet, llvm, etc."
     required: false
-    default: 'true'
+    default: "true"
   remove-browsers:
-    description: 'Remove browser packages like firefox, chrome, etc.'
+    description: "Remove browser packages like firefox, chrome, etc."
     required: false
-    default: 'true'
+    default: "true"
   remove-databases:
-    description: 'Remove database packages like mysql, etc.'
+    description: "Remove database packages like mysql, etc."
     required: false
-    default: 'true'
+    default: "true"
   remove-cloud-tools:
-    description: 'Remove cloud tools like azure-cli, google-cloud-sdk, etc.'
+    description: "Remove cloud tools like azure-cli, google-cloud-sdk, etc."
     required: false
-    default: 'true'
+    default: "true"
   show-top-packages:
-    description: 'Show the largest packages before and after cleanup'
+    description: "Show the largest packages before and after cleanup"
     required: false
-    default: 'true'
+    default: "true"
 
 outputs:
   space-before:
-    description: 'Available disk space before cleaning (in GB)'
+    description: "Available disk space before cleaning (in GB)"
     value: ${{ steps.space-report.outputs.before }}
   space-after:
-    description: 'Available disk space after cleaning (in GB)'
+    description: "Available disk space after cleaning (in GB)"
     value: ${{ steps.space-report.outputs.after }}
   space-saved:
-    description: 'Disk space saved by cleaning (in GB)'
+    description: "Disk space saved by cleaning (in GB)"
     value: ${{ steps.space-report.outputs.saved }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Check disk space before cleaning
       id: space-report
@@ -98,6 +98,23 @@ runs:
           sudo apt-get remove -y '^clang.*' || true
           sudo apt-get remove -y '^gcc-1.*' || true
           sudo apt-get remove -y 'mono-devel' || true
+          sudo apt-get remove -y 'julia' || true
+          sudo apt-get remove -y 'kotlin' || true
+          sudo apt-get remove -y 'swift' || true
+          sudo apt-get remove -y '^ghc' || true
+          sudo apt-get remove -y 'cabal-install' || true
+          sudo apt-get remove -y 'haskell-stack' || true
+          sudo apt-get remove -y 'rustup' || true
+          sudo apt-get remove -y 'rust-*' || true
+          sudo apt-get remove -y 'cargo' || true
+          sudo apt-get remove -y 'bazel' || true
+          sudo apt-get remove -y 'bazelisk' || true
+          sudo apt-get remove -y 'gradle' || true
+          sudo apt-get remove -y 'maven' || true
+          sudo apt-get remove -y 'ant' || true
+          sudo apt-get remove -y 'cmake' || true
+          sudo apt-get remove -y 'golang-*' || true
+          sudo apt-get remove -y 'golang' || true
         fi
 
         # Remove browser packages
@@ -134,6 +151,18 @@ runs:
         sudo apt-get remove -y 'python3' || true
         sudo apt-get remove -y 'snapd' || true
         sudo apt-get remove -y 'libgl1-mesa-dri' || true
+        sudo apt-get remove -y 'apache2' || true
+        sudo apt-get remove -y 'nginx' || true
+        sudo apt-get remove -y 'podman' || true
+        sudo apt-get remove -y 'minikube' || true
+        sudo apt-get remove -y 'kind' || true
+        sudo apt-get remove -y 'mercurial' || true
+        sudo apt-get remove -y 'selenium-server' || true
+        sudo apt-get remove -y 'docker-ce' || true
+        sudo apt-get remove -y 'moby-cli' || true
+        sudo apt-get remove -y 'moby-engine' || true
+        sudo apt-get remove -y 'containerd' || true
+        sudo apt-get remove -y 'runc' || true
 
         # Clean up package manager
         echo "🧹 Cleaning up package manager..."
@@ -145,6 +174,10 @@ runs:
         sudo rm -rf /usr/share/dotnet
         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
         sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /usr/local/graalvm
+        sudo rm -rf /home/linuxbrew
+        sudo rm -rf /usr/local/.rustup
+        sudo rm -rf /opt/hostedtoolcache
 
         echo "✅ Disk space after cleanup:"
         sync
