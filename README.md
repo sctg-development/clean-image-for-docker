@@ -63,6 +63,7 @@ jobs:
           remove-android: 'true'
           remove-cached-tools: 'true'
           show-top-packages: 'true'
+          relocate-docker-storage: 'true'
           
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -163,18 +164,6 @@ On Ubuntu 24.04, typical disk space savings with default settings:
 - **Before**: ~23-25 GB available
 - **After**: ~35-40+ GB available
 - **Saved**: ~12-17 GB
-
-### Advanced: Configure Docker Storage
-
-For even more space, use the companion script `configure-docker-storage.sh` to move Docker's storage to the `/mnt` partition:
-
-```bash
-sudo bash configure-docker-storage.sh
-```
-
-This gives you access to the additional ~66GB on the `/mnt` partition for Docker images and containers.
-
-See [DOCKER-STORAGE-CONFIG.md](DOCKER-STORAGE-CONFIG.md) for more details.
 
 ## License
 

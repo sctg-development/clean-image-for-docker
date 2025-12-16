@@ -49,10 +49,11 @@ inputs:
   show-top-packages:
     description: "Show the largest packages before and after cleanup"
     required: false
-  remove-testing-tools:
     default: "true"
+  remove-testing-tools:
     description: "Remove testing and analysis tools like newman, packer, yamllint, etc."
     required: false
+    default: "true"
   remove-documentation:
     description: "Remove documentation tools like sphinx, texinfo, emoji fonts, etc."
     required: false
@@ -65,6 +66,11 @@ inputs:
     description: "Remove cached Go, Node.js, Python, Ruby versions"
     required: false
     default: "true"
+  relocate-docker-storage:
+    description: "Relocate Docker storage to /mnt partition for additional space"
+    required: false
+    default: "true"
+
 outputs:
   space-before:
     description: "Available disk space before cleaning (in GB)"
@@ -79,6 +85,44 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Relocate Docker storage to /mnt
+      if: inputs.relocate-docker-storage == 'true'
+      shell: bash
+      run: |
+        # Create Docker data directory on /mnt
+        echo "📁 Creating Docker data directory on /mnt..."
+        sudo mkdir -p /mnt/docker
+        sudo chown root:root /mnt/docker
+        sudo chmod 700 /mnt/docker
+
+        # Backup existing daemon.json if it exists
+        if [ -f /etc/docker/daemon.json ]; then
+          echo "💾 Backing up existing daemon.json..."
+          sudo cp /etc/docker/daemon.json /etc/docker/daemon.json.bak.$(date +%s)
+        fi
+
+        # Create/update daemon.json with data-root pointing to /mnt/docker
+        echo "⚙️ Updating Docker daemon configuration..."
+        sudo mkdir -p /etc/docker
+
+        if command -v jq &> /dev/null; then
+          CONFIG=$(sudo cat /etc/docker/daemon.json 2>/dev/null || echo "{}")
+          echo "$CONFIG" | jq '. + {"data-root": "/mnt/docker"}' | sudo tee /etc/docker/daemon.json > /dev/null
+        else
+          echo '{"data-root": "/mnt/docker"}' | sudo tee /etc/docker/daemon.json > /dev/null
+        fi
+
+        # Reload Docker daemon configuration
+        echo "🔄 Reloading Docker daemon..."
+        sudo systemctl daemon-reload
+        sudo systemctl restart docker
+
+        # Verify configuration
+        echo "✅ Docker storage relocated to /mnt!"
+        echo ""
+        echo "📊 Docker configuration:"
+        docker info | grep -A 2 "Docker Root Dir" || true
+
     - name: Check disk space before cleaning
       id: space-report
       shell: bash
