@@ -49,8 +49,22 @@ inputs:
   show-top-packages:
     description: "Show the largest packages before and after cleanup"
     required: false
+  remove-testing-tools:
     default: "true"
-
+    description: "Remove testing and analysis tools like newman, packer, yamllint, etc."
+    required: false
+  remove-documentation:
+    description: "Remove documentation tools like sphinx, texinfo, emoji fonts, etc."
+    required: false
+    default: "true"
+  remove-android:
+    description: "Remove Android SDK and NDK"
+    required: false
+    default: "true"
+  remove-cached-tools:
+    description: "Remove cached Go, Node.js, Python, Ruby versions"
+    required: false
+    default: "true"
 outputs:
   space-before:
     description: "Available disk space before cleaning (in GB)"
@@ -115,6 +129,10 @@ runs:
           sudo apt-get remove -y 'cmake' || true
           sudo apt-get remove -y 'golang-*' || true
           sudo apt-get remove -y 'golang' || true
+          sudo apt-get remove -y '^openjdk.*' || true
+          sudo apt-get remove -y '.*temurin*' || true
+          sudo apt-get remove -y 'default-jdk' || true
+          sudo apt-get remove -y 'default-jre' || true
         fi
 
         # Remove browser packages
@@ -139,13 +157,15 @@ runs:
           sudo apt-get remove -y 'azure-cli' || true
           sudo apt-get remove -y 'google-cloud-sdk' || true
           sudo apt-get remove -y 'aws-cli' || true
+          sudo apt-get remove -y 'aws-sam-cli' || true
+          sudo apt-get remove -y 'azcopy' || true
+          sudo apt-get remove -y 'bicep' || true
+          sudo apt-get remove -y 'pulumi' || true
         fi
 
         # Remove other large packages
         echo "🗑️ Removing other large packages..."
         sudo apt-get remove -y 'php.*' || true
-        sudo apt-get remove -y '^openjdk.*' || true
-        sudo apt-get remove -y '.*temurin*' || true
         sudo apt-get remove -y 'hhvm' || true
         sudo apt-get remove -y 'powershell' || true
         sudo apt-get remove -y 'python3' || true
@@ -158,26 +178,73 @@ runs:
         sudo apt-get remove -y 'kind' || true
         sudo apt-get remove -y 'mercurial' || true
         sudo apt-get remove -y 'selenium-server' || true
-        sudo apt-get remove -y 'docker-ce' || true
         sudo apt-get remove -y 'moby-cli' || true
         sudo apt-get remove -y 'moby-engine' || true
-        sudo apt-get remove -y 'containerd' || true
-        sudo apt-get remove -y 'runc' || true
+        sudo apt-get remove -y 'skopeo' || true
+        sudo apt-get remove -y 'buildah' || true
+        sudo apt-get remove -y 'git-ftp' || true
+        sudo apt-get remove -y 'rpm' || true
+        sudo apt-get remove -y 'p7zip.*' || true
+
+        # Remove testing and analysis tools
+        if [ "${{ inputs.remove-testing-tools }}" == "true" ]; then
+          echo "🗑️ Removing testing and analysis tools..."
+          sudo apt-get remove -y 'newman' || true
+          sudo apt-get remove -y 'packer' || true
+          sudo apt-get remove -y 'yamllint' || true
+          sudo apt-get remove -y 'shellcheck' || true
+          sudo apt-get remove -y 'xvfb' || true
+          sudo apt-get remove -y 'libxkbcommon0' || true
+        fi
+
+        # Remove documentation tools
+        if [ "${{ inputs.remove-documentation }}" == "true" ]; then
+          echo "🗑️ Removing documentation tools..."
+          sudo apt-get remove -y 'sphinx-common' || true
+          sudo apt-get remove -y 'sphinxsearch' || true
+          sudo apt-get remove -y 'texinfo' || true
+          sudo apt-get remove -y 'fonts-noto-color-emoji' || true
+          sudo apt-get remove -y 'mediainfo' || true
+        fi
 
         # Clean up package manager
         echo "🧹 Cleaning up package manager..."
         sudo apt-get autoremove -y || true
         sudo apt-get clean || true
 
+        # Remove Android SDK
+        if [ "${{ inputs.remove-android }}" == "true" ]; then
+          echo "🗑️ Removing Android SDK and NDK..."
+          sudo rm -rf /usr/local/lib/android
+        fi
+
         # Remove large directories
         echo "🗑️ Removing large directories..."
         sudo rm -rf /usr/share/dotnet
         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        sudo rm -rf /usr/local/lib/android
         sudo rm -rf /usr/local/graalvm
         sudo rm -rf /home/linuxbrew
         sudo rm -rf /usr/local/.rustup
-        sudo rm -rf /opt/hostedtoolcache
+        sudo rm -rf /usr/local/go
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/gradle
+        sudo rm -rf /opt/maven
+        sudo rm -rf /opt/ant
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/julia
+        sudo rm -rf /opt/kotlin
+        sudo rm -rf /opt/swift
+        sudo rm -rf /opt/rust
+        sudo rm -rf /opt/android-sdk
+        sudo rm -rf /opt/android-ndk
+        sudo rm -rf /usr/share/java
+        sudo rm -rf /usr/local/lib/android
+
+        # Remove cached tools
+        if [ "${{ inputs.remove-cached-tools }}" == "true" ]; then
+          echo "🗑️ Removing cached tools..."
+          sudo rm -rf /opt/hostedtoolcache
+        fi
 
         echo "✅ Disk space after cleanup:"
         sync
