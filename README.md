@@ -164,6 +164,18 @@ On Ubuntu 24.04, typical disk space savings with default settings:
 - **After**: ~35-40+ GB available
 - **Saved**: ~12-17 GB
 
+### Advanced: Configure Docker Storage
+
+For even more space, use the companion script `configure-docker-storage.sh` to move Docker's storage to the `/mnt` partition:
+
+```bash
+sudo bash configure-docker-storage.sh
+```
+
+This gives you access to the additional ~66GB on the `/mnt` partition for Docker images and containers.
+
+See [DOCKER-STORAGE-CONFIG.md](DOCKER-STORAGE-CONFIG.md) for more details.
+
 ## License
 
 MIT License - See [LICENSE.md](LICENSE.md)
