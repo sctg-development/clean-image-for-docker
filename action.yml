@@ -178,8 +178,6 @@ runs:
         sudo apt-get remove -y 'kind' || true
         sudo apt-get remove -y 'mercurial' || true
         sudo apt-get remove -y 'selenium-server' || true
-        sudo apt-get remove -y 'moby-cli' || true
-        sudo apt-get remove -y 'moby-engine' || true
         sudo apt-get remove -y 'skopeo' || true
         sudo apt-get remove -y 'buildah' || true
         sudo apt-get remove -y 'git-ftp' || true
